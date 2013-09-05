@@ -30,6 +30,7 @@ void set_urgency(monitor_t *, desktop_t *, node_t *, bool);
 void set_floating_atom(xcb_window_t, uint32_t);
 void enable_floating_atom(xcb_window_t);
 void disable_floating_atom(xcb_window_t);
+void set_opacity(node_t *, double);
 void window_border_width(xcb_window_t, uint32_t);
 void window_move(xcb_window_t, int16_t, int16_t);
 void window_resize(xcb_window_t, uint16_t, uint16_t);

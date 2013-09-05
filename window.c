@@ -103,8 +103,9 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
         return;
 
     bool floating = false, follow = false, transient = false, fullscreen = false, takes_focus = true, manage = true;
+    double opacity = 1.0;
 
-    handle_rules(win, &m, &d, &floating, &follow, &transient, &fullscreen, &takes_focus, &manage);
+    handle_rules(win, &m, &d, &floating, &follow, &transient, &fullscreen, &takes_focus, &manage, &opacity);
 
     if (!manage) {
         disable_floating_atom(win);
@@ -142,6 +143,9 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
 
     if (is_tiled(c))
         window_lower(c->window);
+
+    if (opacity >= 0.0 && opacity < 1.0)
+        set_opacity(n, opacity);
 
     c->transient = transient;
 
@@ -397,6 +401,14 @@ void enable_floating_atom(xcb_window_t win)
 void disable_floating_atom(xcb_window_t win)
 {
     set_floating_atom(win, 0);
+}
+
+void set_opacity(node_t *n, double value)
+{
+    if (n == NULL || n->client->opacity == value)
+        return;
+    n->client->opacity = value;
+    set_atom(n->client->window, _NET_WM_WINDOW_OPACITY, value * 0xffffffff);
 }
 
 uint32_t get_border_color(client_t *c, bool focused_window, bool focused_monitor)
