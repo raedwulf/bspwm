@@ -486,6 +486,14 @@ bool cmd_rule(char **args, int num, char *rsp) {
                     rule->effect.follow = true;
                 } else if (streq("--focus", *args)) {
                     rule->effect.focus = true;
+                } else if (streq("--opacity", *args)) {
+                    num--, args++;
+                    if (num < 1) {
+                        free(rule);
+                        rule_uid--;
+                        return false;
+                    }
+                    rule->effect.opacity = atof(*args);
                 } else if (streq("-d", *args) || streq("--desktop", *args)) {
                     num--, args++;
                     if (num < 1) {

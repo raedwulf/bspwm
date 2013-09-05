@@ -144,6 +144,7 @@ typedef struct {
     bool locked;       /* protects window from being closed */
     bool urgent;
     bool icccm_focus;  /* send an event to request input focus */
+    double opacity;
     xcb_rectangle_t floating_rectangle;
     xcb_rectangle_t tiled_rectangle;
 } client_t;
@@ -219,6 +220,7 @@ typedef struct {
     bool floating;
     bool follow;
     bool focus;
+    double opacity;
     char desc[MAXLEN];
 } rule_effect_t;
 
