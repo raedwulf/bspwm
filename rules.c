@@ -149,7 +149,8 @@ void list_rules(char *pattern, char *rsp)
         if (r->effect.focus)
             strncat(rsp, " --focus", REMLEN(rsp));
 	if (r->effect.opacity != 1.0)
-            strncat(rsp, " --opacity", REMLEN(rsp));
+            snprintf(line, sizeof(line), " --opacity %f", r->effect.opacity);
+            strncat(rsp, line, REMLEN(rsp));
         if (r->effect.desc[0] != '\0') {
             snprintf(line, sizeof(line), " -d %s", r->effect.desc);
             strncat(rsp, line, REMLEN(rsp));
