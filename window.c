@@ -548,10 +548,15 @@ void lower_stack_below()
 
 void stack_tiled(desktop_t *d)
 {
-    for (node_list_t *a = d->history->head; a != NULL; a = a->next)
-        if (a->latest && is_tiled(a->node->client))
+    bool changed = false;
+    for (node_list_t *a = d->history->head; a != NULL; a = a->next) {
+        if (a->latest && is_tiled(a->node->client)) {
             window_lower(a->node->client->window);
-    lower_stack_below();
+            changed = true;
+        }
+    }
+    if (changed)
+        lower_stack_below();
 }
 
 void stack(desktop_t *d, node_t *n)
