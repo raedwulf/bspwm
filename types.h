@@ -177,6 +177,13 @@ typedef struct {
     node_list_t *tail;
 } focus_history_t;
 
+typedef struct stack_below_list_t stack_below_list_t;
+struct stack_below_list_t {
+    xcb_window_t win;
+    stack_below_list_t *prev;
+    stack_below_list_t *next;
+};
+
 typedef struct desktop_t desktop_t;
 struct desktop_t {
     char name[MAXLEN];

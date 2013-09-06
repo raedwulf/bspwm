@@ -167,6 +167,7 @@ void init(void)
     num_monitors = num_desktops = num_clients = 0;
     monitor_uid = desktop_uid = rule_uid = 0;
     mon = last_mon = mon_head = mon_tail = NULL;
+    sb_head = sb_tail = NULL;
     rule_head = rule_tail = NULL;
     status_fifo = NULL;
     last_motion_time = last_motion_x = last_motion_y = 0;
@@ -205,6 +206,7 @@ void setup(void)
                               ewmh->_NET_WM_STATE,
                               ewmh->_NET_WM_STATE_FULLSCREEN,
                               ewmh->_NET_WM_STATE_DEMANDS_ATTENTION,
+                              ewmh->_NET_WM_STATE_BELOW,
                               ewmh->_NET_WM_WINDOW_TYPE,
                               ewmh->_NET_WM_WINDOW_TYPE_DOCK,
                               ewmh->_NET_WM_WINDOW_TYPE_NOTIFICATION,
