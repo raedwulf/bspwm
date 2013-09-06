@@ -471,7 +471,7 @@ void query_pointer(xcb_window_t *win, xcb_point_t *pt)
         free(qpr);
     }
     window_raise(motion_recorder);
-    lower_stack_below();
+    stack_below_lower();
 }
 
 void window_focus(xcb_window_t win)
@@ -540,7 +540,19 @@ bool remove_stack_below(xcb_window_t win)
     return false;
 }
 
-void lower_stack_below()
+void stack_below_hide()
+{
+    for (stack_below_list_t *sb = sb_head; sb != NULL; sb = sb->next)
+        window_hide(sb->win);
+}
+
+void stack_below_show()
+{
+    for (stack_below_list_t *sb = sb_head; sb != NULL; sb = sb->next)
+        window_show(sb->win);
+}
+
+void stack_below_lower()
 {
     for (stack_below_list_t *sb = sb_head; sb != NULL; sb = sb->next)
         window_lower(sb->win);
@@ -548,15 +560,12 @@ void lower_stack_below()
 
 void stack_tiled(desktop_t *d)
 {
-    bool changed = false;
-    for (node_list_t *a = d->history->head; a != NULL; a = a->next) {
-        if (a->latest && is_tiled(a->node->client)) {
+    stack_below_hide();
+    for (node_list_t *a = d->history->head; a != NULL; a = a->next)
+        if (a->latest && is_tiled(a->node->client))
             window_lower(a->node->client->window);
-            changed = true;
-        }
-    }
-    if (changed)
-        lower_stack_below();
+    stack_below_lower();
+    stack_below_show();
 }
 
 void stack(desktop_t *d, node_t *n)
