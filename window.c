@@ -107,18 +107,20 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
         free(wa);
     }
 
-    if (override_redirect || locate_window(win, &loc)) {
-        xcb_ewmh_get_atoms_reply_t win_state;
-        if (xcb_ewmh_get_wm_state_reply(ewmh, xcb_ewmh_get_wm_state(ewmh, win), &win_state, NULL) == 1) {
-            for (unsigned int i = 0; i < win_state.atoms_len; i++) {
-                xcb_atom_t a = win_state.atoms[i];
-                if (a == ewmh->_NET_WM_STATE_BELOW) {
-                    window_lower(win);
-                }
+    xcb_ewmh_get_atoms_reply_t win_state;
+
+    if (xcb_ewmh_get_wm_state_reply(ewmh, xcb_ewmh_get_wm_state(ewmh, win), &win_state, NULL) == 1) {
+        for (unsigned int i = 0; i < win_state.atoms_len; i++) {
+            xcb_atom_t a = win_state.atoms[i];
+            if (a == ewmh->_NET_WM_STATE_BELOW) {
+		window_lower(win);
+		window_show(win);
+		insert_stack_below(win);
+		xcb_ewmh_get_atoms_reply_wipe(&win_state);
+		return;
             }
-            xcb_ewmh_get_atoms_reply_wipe(&win_state);
         }
-        return;
+	xcb_ewmh_get_atoms_reply_wipe(&win_state);
     }
 
     bool floating = false, fullscreen = false, locked = false, follow = false, transient = false, takes_focus = true, manage = true;
@@ -457,6 +459,7 @@ void query_pointer(xcb_window_t *win, xcb_point_t *pt)
     }
 
     window_raise(motion_recorder);
+    lower_stack_below();
 }
 
 void window_focus(xcb_window_t win)
@@ -499,6 +502,7 @@ void window_raise(xcb_window_t win)
     xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_STACK_MODE, values);
 }
 
+<<<<<<< HEAD
 void window_stack(xcb_window_t w1, xcb_window_t w2, uint32_t mode)
 {
     if (w2 == XCB_NONE)
@@ -516,6 +520,46 @@ void window_above(xcb_window_t w1, xcb_window_t w2)
 void window_below(xcb_window_t w1, xcb_window_t w2)
 {
     window_stack(w1, w2, XCB_STACK_MODE_BELOW);
+=======
+void insert_stack_below(xcb_window_t win)
+{
+    stack_below_list_t *sb;
+    for (sb = sb_head; sb != NULL; sb = sb->next)
+        if (sb->win == win) return;
+    sb = malloc(sizeof(stack_below_list_t));
+    sb->win = win;
+    sb->prev = sb_tail;
+    sb->next = NULL;
+    if (!sb_head)
+        sb_head = sb;
+}
+
+bool remove_stack_below(xcb_window_t win)
+{
+    for (stack_below_list_t *sb = sb_head; sb != NULL; sb = sb->next) {
+        if (sb->win == win) {
+            if (sb->prev) sb->prev->next = sb->next;
+            if (sb->next) sb->next->prev = sb->prev;
+            free(sb);
+            return true;
+        }
+    }
+    return false;
+}
+
+void lower_stack_below()
+{
+    for (stack_below_list_t *sb = sb_head; sb != NULL; sb = sb->next)
+        window_lower(sb->win);
+}
+
+void stack_tiled(desktop_t *d)
+{
+    for (node_list_t *a = d->history->head; a != NULL; a = a->next)
+        if (a->latest && is_tiled(a->node->client))
+            window_lower(a->node->client->window);
+    lower_stack_below();
+>>>>>>> a6de268... Handle the _NET_WM_STATE_BELOW in separte stack
 }
 
 void stack(desktop_t *d, node_t *n)

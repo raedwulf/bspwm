@@ -150,6 +150,9 @@ void destroy_notify(xcb_generic_event_t *evt)
 
     PRINTF("destroy notify %X\n", e->window);
 
+    if (remove_stack_below(e->window))
+        return;
+
     coordinates_t loc;
     if (locate_window(e->window, &loc)) {
         remove_node(loc.desktop, loc.node);
@@ -162,6 +165,9 @@ void unmap_notify(xcb_generic_event_t *evt)
     xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *) evt;
 
     PRINTF("unmap notify %X\n", e->window);
+
+    if (remove_stack_below(e->window))
+        return;
 
     coordinates_t loc;
     if (locate_window(e->window, &loc)) {

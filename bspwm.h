@@ -30,6 +30,9 @@ monitor_t *pri_mon;
 rule_t *rule_head;
 rule_t *rule_tail;
 
+stack_below_list_t *sb_head;
+stack_below_list_t *sb_tail;
+
 pointer_state_t *frozen_pointer;
 xcb_window_t motion_recorder;
 xcb_atom_t WM_TAKE_FOCUS;
