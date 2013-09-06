@@ -502,7 +502,6 @@ void window_raise(xcb_window_t win)
     xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_STACK_MODE, values);
 }
 
-<<<<<<< HEAD
 void window_stack(xcb_window_t w1, xcb_window_t w2, uint32_t mode)
 {
     if (w2 == XCB_NONE)
@@ -520,7 +519,7 @@ void window_above(xcb_window_t w1, xcb_window_t w2)
 void window_below(xcb_window_t w1, xcb_window_t w2)
 {
     window_stack(w1, w2, XCB_STACK_MODE_BELOW);
-=======
+}
 void insert_stack_below(xcb_window_t win)
 {
     stack_below_list_t *sb;
@@ -555,11 +554,15 @@ void lower_stack_below()
 
 void stack_tiled(desktop_t *d)
 {
-    for (node_list_t *a = d->history->head; a != NULL; a = a->next)
-        if (a->latest && is_tiled(a->node->client))
+    bool changed = false;
+    for (node_list_t *a = d->history->head; a != NULL; a = a->next) {
+        if (a->latest && is_tiled(a->node->client)) {
             window_lower(a->node->client->window);
-    lower_stack_below();
->>>>>>> a6de268... Handle the _NET_WM_STATE_BELOW in separte stack
+            changed = true;
+        }
+    }
+    if (changed)
+        lower_stack_below();
 }
 
 void stack(desktop_t *d, node_t *n)
