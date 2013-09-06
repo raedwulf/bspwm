@@ -107,8 +107,19 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
         free(wa);
     }
 
-    if (override_redirect || locate_window(win, &loc))
+    if (override_redirect || locate_window(win, &loc)) {
+        xcb_ewmh_get_atoms_reply_t win_state;
+        if (xcb_ewmh_get_wm_state_reply(ewmh, xcb_ewmh_get_wm_state(ewmh, win), &win_state, NULL) == 1) {
+            for (unsigned int i = 0; i < win_state.atoms_len; i++) {
+                xcb_atom_t a = win_state.atoms[i];
+                if (a == ewmh->_NET_WM_STATE_BELOW) {
+                    window_lower(win);
+                }
+            }
+            xcb_ewmh_get_atoms_reply_wipe(&win_state);
+        }
         return;
+    }
 
     bool floating = false, fullscreen = false, locked = false, follow = false, transient = false, takes_focus = true, manage = true;
     handle_rules(win, &m, &d, &floating, &fullscreen, &locked, &follow, &transient, &takes_focus, &manage);
