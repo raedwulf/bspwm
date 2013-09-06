@@ -539,6 +539,8 @@ bool remove_stack_below(xcb_window_t win)
         if (sb->win == win) {
             if (sb->prev) sb->prev->next = sb->next;
             if (sb->next) sb->next->prev = sb->prev;
+            if (sb == sb_head) sb_head = sb->next;
+            if (sb == sb_tail) sb_tail = sb->prev;
             free(sb);
             return true;
         }
