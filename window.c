@@ -483,7 +483,6 @@ void query_pointer(xcb_window_t *win, xcb_point_t *pt)
         free(qpr);
     }
     window_raise(motion_recorder);
-    stack_below_lower();
 }
 
 void window_focus(xcb_window_t win)
