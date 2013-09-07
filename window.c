@@ -158,6 +158,11 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
 
     set_fullscreen(d, n, fullscreen);
 
+    if (is_tiled(c)) {
+        window_lower(c->window);
+        stack_below_lower();
+    }
+
     c->transient = transient;
 
     bool give_focus = (takes_focus && (d == mon->desk || follow));
@@ -567,12 +572,14 @@ void stack_below_lower()
 
 void stack_tiled(desktop_t *d)
 {
-    stack_below_hide();
+    bool lowered = false;
     for (node_list_t *a = d->history->head; a != NULL; a = a->next)
-        if (a->latest && is_tiled(a->node->client))
+        if (a->latest && is_tiled(a->node->client) && might_cover(d, a->node)) {
             window_lower(a->node->client->window);
-    stack_below_lower();
-    stack_below_show();
+            lowered = true;
+        }
+    if (lowered)
+        stack_below_lower();
 }
 
 void stack(desktop_t *d, node_t *n)
