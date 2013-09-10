@@ -8,7 +8,7 @@ bspwm(1)
 Name
 ----
 
-bspwm - Tiling window manager based on binary space partitioning
+bspwm - Binary space partitioning window manager
 
 Synopsis
 --------
@@ -242,7 +242,7 @@ Select a monitor.
 ----
 MONITOR_SEL := <monitor_name>
              | ^<n>
-             | (DIR|CYCLE_DIR|last|focused)[.occupied|.free]
+             | (DIR|CYCLE_DIR|last|primary|focused)[.occupied|.free]
 ----
 
 Primary Selectors
@@ -259,6 +259,9 @@ Primary Selectors
 
 'CYCLE_DIR'::
     Selects the monitor in the given (cyclic) direction relative to the active monitor.
+
+primary::
+    Selects the primary monitor.
 
 last::
     Selects the previously focused monitor.
@@ -347,6 +350,9 @@ Options
 *-n*, *--rename* <new_name>::
     Rename the selected desktop.
 
+*-s*, *--swap* 'DESKTOP_SEL'::
+    Swap the selected desktop with the given desktop.
+
 *-r*, *--remove*::
     Remove the selected desktop.
 
@@ -389,6 +395,9 @@ Options
 
 *-n*, *--rename* <new_name>::
     Rename the selected monitor.
+
+*-s*, *--swap* 'MONITOR_SEL'::
+    Swap the selected monitor with the given monitor.
 
 Query
 ~~~~~
