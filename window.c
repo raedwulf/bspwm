@@ -35,6 +35,15 @@ bool contains(xcb_rectangle_t a, xcb_rectangle_t b)
             && a.y <= b.y && (a.y + a.height) >= (b.y + b.height));
 }
 
+bool might_cover(desktop_t *d, node_t *n)
+{
+    for (node_t *f = first_extrema(d->root); f != NULL; f = next_leaf(f, d->root))
+        if (f != n && is_floating(f->client) && contains(n->client->floating_rectangle, f->client->floating_rectangle))
+            return true;
+    return false;
+}
+
+
 bool is_inside(monitor_t *m, xcb_point_t pt)
 {
     xcb_rectangle_t r = m->rectangle;
