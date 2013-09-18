@@ -9,7 +9,6 @@
 
 void center(xcb_rectangle_t, xcb_rectangle_t *);
 bool contains(xcb_rectangle_t, xcb_rectangle_t);
-bool might_cover(desktop_t *, node_t *);
 bool is_inside(monitor_t *, xcb_point_t);
 xcb_rectangle_t get_rectangle(client_t *);
 void get_side_handle(client_t *, direction_t, xcb_point_t *);
@@ -41,6 +40,9 @@ bool remove_stack_below(xcb_window_t);
 void stack_below_hide();
 void stack_below_show();
 void stack_below_lower();
+void window_stack(xcb_window_t, xcb_window_t, uint32_t);
+void window_above(xcb_window_t, xcb_window_t);
+void window_below(xcb_window_t, xcb_window_t);
 void stack_tiled(desktop_t *);
 void stack(desktop_t *, node_t *);
 void window_lower(xcb_window_t);

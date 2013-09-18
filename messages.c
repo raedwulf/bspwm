@@ -282,7 +282,7 @@ bool cmd_desktop(char **args, int num)
             strncpy(trg.desktop->name, *args, sizeof(trg.desktop->name));
             ewmh_update_desktop_names();
             put_status();
-        } else if (streq("-r", *args) || streq("--rm", *args)) {
+        } else if (streq("-r", *args) || streq("--remove", *args)) {
             if (trg.desktop->root == NULL
                     && trg.monitor->desk_head != trg.monitor->desk_tail) {
                 remove_desktop(trg.monitor, trg.desktop);
@@ -388,19 +388,6 @@ bool cmd_monitor(char **args, int num)
                 }
                 num--, args++;
             }
-        } else if (streq("-p", *args) || streq("--pad", *args)) {
-            num--, args++;
-            if (num < 4)
-                return false;
-            char values[MAXLEN];
-            snprintf(values, sizeof(values), "%s %s %s %s", args[0], args[1], args[2], args[3]);
-            num -= 3;
-            args += 3;
-            if (sscanf(values, "%i %i %i %i", &trg.monitor->top_padding, &trg.monitor->right_padding, &trg.monitor->bottom_padding, &trg.monitor->left_padding) == 4)
-                for (desktop_t *d = trg.monitor->desk_head; d != NULL; d = d->next)
-                    arrange(trg.monitor, d);
-            else
-                return false;
         } else if (streq("-n", *args) || streq("--rename", *args)) {
             num--, args++;
             if (num < 1)
@@ -504,6 +491,10 @@ bool cmd_rule(char **args, int num, char *rsp) {
                     rule->effect.follow = true;
                 } else if (streq("--focus", *args)) {
                     rule->effect.focus = true;
+                } else if (streq("--unmanage", *args)) {
+                    rule->effect.unmanage = true;
+                } else if (streq("--one-shot", *args)) {
+                    rule->one_shot = true;
                 } else if (streq("-d", *args) || streq("--desktop", *args)) {
                     num--, args++;
                     if (num < 1) {
@@ -520,7 +511,7 @@ bool cmd_rule(char **args, int num, char *rsp) {
                 num--, args++;
             }
             add_rule(rule);
-        } else if (streq("-r", *args) || streq("--rm", *args)) {
+        } else if (streq("-r", *args) || streq("--remove", *args)) {
             num--, args++;
             if (num < 1)
                 return false;
@@ -528,6 +519,10 @@ bool cmd_rule(char **args, int num, char *rsp) {
             while (num > 0) {
                 if (sscanf(*args, "%X", &uid) == 1)
                     remove_rule_by_uid(uid);
+                else if (streq("tail", *args))
+                    remove_rule(rule_tail);
+                else if (streq("head", *args))
+                    remove_rule(rule_head);
                 else
                     return false;
                 num--, args++;
@@ -618,10 +613,32 @@ bool cmd_control(char **args, int num) {
 }
 
 bool cmd_config(char **args, int num, char *rsp) {
+    if (num < 1)
+        return false;
+    coordinates_t ref = {mon, mon->desk, mon->desk->focus};
+    coordinates_t trg = {NULL, NULL, NULL};
+    if (*args[0] == OPT_CHR) {
+        if (streq("-d", *args) || streq("--desktop", *args)) {
+            num--, args++;
+            if (num < 1)
+                return false;
+            if (!desktop_from_desc(*args, &ref, &trg))
+                return false;
+        } else if (streq("-m", *args) || streq("--monitor", *args)) {
+            num--, args++;
+            if (num < 1)
+                return false;
+            if (!monitor_from_desc(*args, &ref, &trg))
+                return false;
+        } else {
+            return false;
+        }
+        num--, args++;
+    }
     if (num == 2)
-        return set_setting(*args, *(args + 1));
+        return set_setting(trg, *args, *(args + 1));
     else if (num == 1)
-        return get_setting(*args, rsp);
+        return get_setting(trg, *args, rsp);
     else
         return false;
 }
@@ -696,14 +713,39 @@ bool process_message(char **args, int num, char *rsp)
     return false;
 }
 
-bool set_setting(char *name, char *value)
+bool set_setting(coordinates_t loc, char *name, char *value)
 {
     if (streq("border_width", name)) {
         if (sscanf(value, "%u", &border_width) != 1)
             return false;
     } else if (streq("window_gap", name)) {
-        if (sscanf(value, "%i", &window_gap) != 1)
+        int wg;
+        if (sscanf(value, "%i", &wg) != 1)
             return false;
+        if (loc.desktop != NULL)
+            loc.desktop->window_gap = wg;
+        else if (loc.monitor != NULL)
+            for (desktop_t *d = loc.monitor->desk_head; d != NULL; d = d->next)
+                d->window_gap = wg;
+        else
+            for (monitor_t *m = mon_head; m != NULL; m = m->next)
+                for (desktop_t *d = m->desk_head; d != NULL; d = d->next)
+                    d->window_gap = wg;
+#define MONSET(k) \
+    } else if (streq(#k, name)) { \
+        int v; \
+        if (sscanf(value, "%i", &v) != 1) \
+            return false; \
+        if (loc.monitor != NULL) \
+            loc.monitor->k = v; \
+        else \
+            for (monitor_t *m = mon_head; m!= NULL; m = m->next) \
+                m->k = v;
+    MONSET(top_padding)
+    MONSET(right_padding)
+    MONSET(bottom_padding)
+    MONSET(left_padding)
+#undef MONSET
     } else if (streq("split_ratio", name)) {
         double rat;
         if (sscanf(value, "%lf", &rat) == 1 && rat > 0 && rat < 1)
@@ -746,7 +788,6 @@ bool set_setting(char *name, char *value)
         SETBOOL(borderless_monocle)
         SETBOOL(gapless_monocle)
         SETBOOL(pointer_follows_monitor)
-        SETBOOL(adaptative_raise)
         SETBOOL(apply_floating_atom)
         SETBOOL(auto_alternate)
         SETBOOL(auto_cancel)
@@ -763,14 +804,28 @@ bool set_setting(char *name, char *value)
     return true;
 }
 
-bool get_setting(char *name, char* rsp)
+bool get_setting(coordinates_t loc, char *name, char* rsp)
 {
     if (streq("border_width", name))
         snprintf(rsp, BUFSIZ, "%u", border_width);
     else if (streq("split_ratio", name))
         snprintf(rsp, BUFSIZ, "%lf", split_ratio);
     else if (streq("window_gap", name))
-        snprintf(rsp, BUFSIZ, "%i", window_gap);
+        if (loc.desktop == NULL)
+            return false;
+        else
+            snprintf(rsp, BUFSIZ, "%i", loc.desktop->window_gap);
+#define MONGET(k) \
+    else if (streq(#k, name)) \
+        if (loc.monitor == NULL) \
+            return false; \
+        else \
+            snprintf(rsp, BUFSIZ, "%i", loc.monitor->k);
+    MONGET(top_padding)
+    MONGET(right_padding)
+    MONGET(bottom_padding)
+    MONGET(left_padding)
+#undef MONGET
 #define GETCOLOR(s) \
     else if (streq(#s, name)) \
         snprintf(rsp, BUFSIZ, "%s", s);
@@ -790,7 +845,6 @@ bool get_setting(char *name, char* rsp)
     GETBOOL(gapless_monocle)
     GETBOOL(focus_follows_pointer)
     GETBOOL(pointer_follows_monitor)
-    GETBOOL(adaptative_raise)
     GETBOOL(apply_floating_atom)
     GETBOOL(auto_alternate)
     GETBOOL(auto_cancel)

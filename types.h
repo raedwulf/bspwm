@@ -10,6 +10,7 @@
 #define DEFAULT_DESK_NAME    "Desktop"
 #define DEFAULT_MON_NAME     "Monitor"
 #define MISSING_VALUE        "N/A"
+#define WINDOW_GAP           6
 
 typedef enum {
     TYPE_HORIZONTAL,
@@ -143,7 +144,7 @@ typedef struct {
     bool fullscreen;
     bool locked;       /* protects window from being closed */
     bool urgent;
-    bool icccm_focus;  /* send an event to request input focus */
+    bool icccm_focus;
     xcb_rectangle_t floating_rectangle;
     xcb_rectangle_t tiled_rectangle;
 } client_t;
@@ -166,7 +167,7 @@ struct node_t {
 typedef struct node_list_t node_list_t;
 struct node_list_t {
     node_t *node;
-    bool latest;          /* used for z-ordering tiled windows */
+    bool latest;
     node_list_t *prev;
     node_list_t *next;
 };
@@ -192,6 +193,7 @@ struct desktop_t {
     focus_history_t *history;
     desktop_t *prev;
     desktop_t *next;
+    int window_gap;
 };
 
 typedef struct monitor_t monitor_t;
@@ -226,12 +228,14 @@ typedef struct {
     bool floating;
     bool follow;
     bool focus;
+    bool unmanage;
     char desc[MAXLEN];
 } rule_effect_t;
 
 typedef struct rule_t rule_t;
 struct rule_t {
     unsigned int uid;
+    bool one_shot;
     rule_cause_t cause;
     rule_effect_t effect;
     rule_t *prev;
@@ -262,10 +266,10 @@ typedef struct {
 } fence_distance_t;
 
 node_t *make_node(void);
-monitor_t *make_monitor(xcb_rectangle_t *);
+monitor_t *make_monitor(xcb_rectangle_t);
 monitor_t *find_monitor(char *);
 monitor_t *get_monitor_by_id(xcb_randr_output_t);
-monitor_t *add_monitor(xcb_rectangle_t *);
+monitor_t *add_monitor(xcb_rectangle_t);
 void remove_monitor(monitor_t *);
 void merge_monitors(monitor_t *, monitor_t *);
 void swap_monitors(monitor_t *, monitor_t *);

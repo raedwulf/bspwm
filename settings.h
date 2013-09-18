@@ -17,7 +17,6 @@
 #define URGENT_BORDER_COLOR         "#EFA29A"
 
 #define BORDER_WIDTH   1
-#define WINDOW_GAP     6
 #define SPLIT_RATIO    0.5
 
 #define HISTORY_AWARE_FOCUS      false
@@ -27,7 +26,6 @@
 #define POINTER_FOLLOWS_MONITOR  false
 #define AUTO_ALTERNATE           false
 #define AUTO_CANCEL              false
-#define ADAPTATIVE_RAISE         false
 #define APPLY_FLOATING_ATOM      false
 
 char focused_border_color[MAXLEN];
@@ -40,14 +38,12 @@ char normal_locked_border_color[MAXLEN];
 char urgent_border_color[MAXLEN];
 
 unsigned int border_width;
-int window_gap;
 double split_ratio;
 
 bool borderless_monocle;
 bool gapless_monocle;
 bool focus_follows_pointer;
 bool pointer_follows_monitor;
-bool adaptative_raise;
 bool apply_floating_atom;
 bool auto_alternate;
 bool auto_cancel;

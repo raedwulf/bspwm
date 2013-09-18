@@ -47,7 +47,7 @@ Options
 Configuration
 -------------
 
-*bspwm* have only two sources of informations: the X events it receives and the messages it reads on a dedicated socket.
+*bspwm* has only two sources of informations: the X events it receives and the messages it reads on a dedicated socket.
 
 The default configuration file is '$XDG_CONFIG_HOME/bspwm/bspwmrc'.
 
@@ -390,9 +390,6 @@ Options
 *-r*, *--remove-desktops* <name>...::
     Remove desktops with the given names.
 
-*-p*, *--pad* <top> <right> <bottom> <left>::
-    Set the padding of the selected monitor.
-
 *-n*, *--rename* <new_name>::
     Rename the selected monitor.
 
@@ -456,13 +453,13 @@ Options
 ^^^^^^^
 
 *--adopt-orphans*::
-   Manage all the unmanaged windows remaining from a previous session.
+    Manage all the unmanaged windows remaining from a previous session.
 
 *--put-status*::
     Write the current internal state to the panel FIFO.
 
 *--toggle-visibility*::
-    Toggle the visibility of all the managed windows.
+    Toggle the visibility of all the windows.
 
 Pointer
 ~~~~~~~
@@ -492,10 +489,10 @@ rule 'OPTIONS'
 Options
 ^^^^^^^
 
-*-a*, *--add* <pattern> [-d 'DESKTOP_SEL' [--follow]] [--floating] [--focus]::
+*-a*, *--add* <pattern> [-d 'DESKTOP_SEL' [--follow]] [--floating] [--focus] [--unmanage] [--one-shot]::
     Create a new rule (<pattern> must match the class or instance name).
 
-*-r*, *--rm* <rule_uid>...::
+*-r*, *--remove* <rule_uid>|tail|head...::
     Remove the rules with the given UIDs.
 
 *-l*, *--list* [<pattern>]::
@@ -507,7 +504,7 @@ Config
 General Syntax
 ^^^^^^^^^^^^^^
 
-config <key> [<value>]::
+config [-m 'MONITOR_SEL'|-d 'DESKTOP_SEL'] <key> [<value>]::
     Get or set the value of <key>.
 
 Quit
@@ -525,6 +522,8 @@ Colors are either http://en.wikipedia.org/wiki/X11_color_names[X color names] or
 
 All the boolean settings are 'false' by default.
 
+Global Settings
+~~~~~~~~~~~~~~~
 
 'focused_border_color'::
     Color of the border of a focused window of a focused monitor.
@@ -553,9 +552,6 @@ All the boolean settings are 'false' by default.
 'border_width'::
     Window border width.
 
-'window_gap'::
-    Value of the gap that separates windows.
-
 'split_ratio'::
     Default split ratio.
 
@@ -574,9 +570,6 @@ All the boolean settings are 'false' by default.
 'pointer_follows_monitor'::
     When focusing a monitor, put the pointer at its center.
 
-'adaptative_raise'::
-    Prevent floating windows from being raised when they might cover other floating windows.
-
 'auto_alternate'::
     Interpret two consecutive identical *use* messages as an *alternate* message.
 
@@ -585,6 +578,21 @@ All the boolean settings are 'false' by default.
 
 'apply_floating_atom'::
     Set the value of the '_BSPWM_FLOATING_WINDOW' atom of each window according to its floating state.
+
+Monitor Settings
+~~~~~~~~~~~~~~~~
+
+'top_padding'::
+'right_padding'::
+'bottom_padding'::
+'left_padding'::
+    Padding space added at the sides of the monitor.
+
+Desktop Settings
+~~~~~~~~~~~~~~~~
+
+'window_gap'::
+    Size of the gap that separates windows.
 
 
 Environment Variables
