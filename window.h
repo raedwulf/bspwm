@@ -9,6 +9,7 @@
 
 void center(xcb_rectangle_t, xcb_rectangle_t *);
 bool contains(xcb_rectangle_t, xcb_rectangle_t);
+bool might_cover(desktop_t *, node_t *);
 bool is_inside(monitor_t *, xcb_point_t);
 xcb_rectangle_t get_rectangle(client_t *);
 void get_side_handle(client_t *, direction_t, xcb_point_t *);
