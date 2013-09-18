@@ -2,12 +2,12 @@
 .\"     Title: bspwm
 .\"    Author: [see the "Author" section]
 .\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
-.\"      Date: 09/10/2013
+.\"      Date: 09/17/2013
 .\"    Manual: Bspwm Manual
 .\"    Source: Bspwm 0.8
 .\"  Language: English
 .\"
-.TH "BSPWM" "1" "09/10/2013" "Bspwm 0\&.8" "Bspwm Manual"
+.TH "BSPWM" "1" "09/17/2013" "Bspwm 0\&.8" "Bspwm Manual"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -69,7 +69,7 @@ with the given prefix\&.
 .RE
 .SH "CONFIGURATION"
 .sp
-\fBbspwm\fR have only two sources of informations: the X events it receives and the messages it reads on a dedicated socket\&.
+\fBbspwm\fR has only two sources of informations: the X events it receives and the messages it reads on a dedicated socket\&.
 .sp
 The default configuration file is \fI$XDG_CONFIG_HOME/bspwm/bspwmrc\fR\&.
 .sp
@@ -620,11 +620,6 @@ Create desktops with the given names in the selected monitor\&.
 Remove desktops with the given names\&.
 .RE
 .PP
-\fB\-p\fR, \fB\-\-pad\fR <top> <right> <bottom> <left>
-.RS 4
-Set the padding of the selected monitor\&.
-.RE
-.PP
 \fB\-n\fR, \fB\-\-rename\fR <new_name>
 .RS 4
 Rename the selected monitor\&.
@@ -750,7 +745,7 @@ Write the current internal state to the panel FIFO\&.
 .PP
 \fB\-\-toggle\-visibility\fR
 .RS 4
-Toggle the visibility of all the managed windows\&.
+Toggle the visibility of all the windows\&.
 .RE
 .RE
 .SS "Pointer"
@@ -805,12 +800,12 @@ rule \fIOPTIONS\fR
 \fBOptions\fR
 .RS 4
 .PP
-\fB\-a\fR, \fB\-\-add\fR <pattern> [\-d \fIDESKTOP_SEL\fR [\-\-follow]] [\-\-floating] [\-\-focus] [\-\-opacity <value>]
+\fB\-a\fR, \fB\-\-add\fR <pattern> [\-d \fIDESKTOP_SEL\fR [\-\-follow]] [\-\-floating] [\-\-focus] [\-\-unmanage] [\-\-one\-shot] [\-\-opacity <value>]
 .RS 4
 Create a new rule (<pattern> must match the class or instance name)\&.
 .RE
 .PP
-\fB\-r\fR, \fB\-\-rm\fR <rule_uid>\&...
+\fB\-r\fR, \fB\-\-remove\fR <rule_uid>|tail|head\&...
 .RS 4
 Remove the rules with the given UIDs\&.
 .RE
@@ -830,7 +825,7 @@ List the rules\&.
 \fBGeneral Syntax\fR
 .RS 4
 .PP
-config <key> [<value>]
+config [\-m \fIMONITOR_SEL\fR|\-d \fIDESKTOP_SEL\fR] <key> [<value>]
 .RS 4
 Get or set the value of <key>\&.
 .RE
@@ -855,6 +850,7 @@ Quit with an optional exit status\&.
 Colors are either X color names or \fI#RRGGBB\fR, booleans are \fItrue\fR or \fIfalse\fR\&.
 .sp
 All the boolean settings are \fIfalse\fR by default\&.
+.SS "Global Settings"
 .PP
 \fIfocused_border_color\fR
 .RS 4
@@ -903,11 +899,6 @@ Color of the border of an urgent window\&.
 Window border width\&.
 .RE
 .PP
-\fIwindow_gap\fR
-.RS 4
-Value of the gap that separates windows\&.
-.RE
-.PP
 \fIsplit_ratio\fR
 .RS 4
 Default split ratio\&.
@@ -938,11 +929,6 @@ Focus the window under the pointer\&.
 When focusing a monitor, put the pointer at its center\&.
 .RE
 .PP
-\fIadaptative_raise\fR
-.RS 4
-Prevent floating windows from being raised when they might cover other floating windows\&.
-.RE
-.PP
 \fIauto_alternate\fR
 .RS 4
 Interpret two consecutive identical
@@ -966,6 +952,18 @@ message\&.
 Set the value of the
 \fI_BSPWM_FLOATING_WINDOW\fR
 atom of each window according to its floating state\&.
+.RE
+.SS "Monitor Settings"
+.PP
+\fItop_padding\fR, \fIright_padding\fR, \fIbottom_padding\fR, \fIleft_padding\fR
+.RS 4
+Padding space added at the sides of the monitor\&.
+.RE
+.SS "Desktop Settings"
+.PP
+\fIwindow_gap\fR
+.RS 4
+Size of the gap that separates windows\&.
 .RE
 .SH "ENVIRONMENT VARIABLES"
 .PP

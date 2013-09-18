@@ -2,6 +2,7 @@
 #include <string.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
+#include "window.h"
 #include "types.h"
 #include "bspwm.h"
 #include "ewmh.h"
@@ -52,10 +53,13 @@ rule_t *find_rule(unsigned int uid)
 bool is_match(rule_t *r, xcb_window_t win)
 {
     xcb_icccm_get_wm_class_reply_t reply;
-    if (xcb_icccm_get_wm_class_reply(dpy, xcb_icccm_get_wm_class(dpy, win), &reply, NULL) == 1
+    int8_t success = 0;
+    if (streq(r->cause.name, MATCH_ALL) ||
+            ((success = xcb_icccm_get_wm_class_reply(dpy, xcb_icccm_get_wm_class(dpy, win), &reply, NULL)) == 1
             && (streq(reply.class_name, r->cause.name)
-                || streq(reply.instance_name, r->cause.name))) {
-        xcb_icccm_get_wm_class_reply_wipe(&reply);
+                || streq(reply.instance_name, r->cause.name)))) {
+        if (success == 1)
+            xcb_icccm_get_wm_class_reply_wipe(&reply);
         return true;
     }
     return false;
@@ -73,8 +77,10 @@ void handle_rules(xcb_window_t win, monitor_t **m, desktop_t **d, bool *floating
                 *takes_focus = false;
             } else if (a == ewmh->_NET_WM_WINDOW_TYPE_DIALOG) {
                 *floating = true;
-            } else if (a == ewmh->_NET_WM_WINDOW_TYPE_DOCK || a == ewmh->_NET_WM_WINDOW_TYPE_NOTIFICATION) {
+            } else if (a == ewmh->_NET_WM_WINDOW_TYPE_DOCK || a == ewmh->_NET_WM_WINDOW_TYPE_DESKTOP || a == ewmh->_NET_WM_WINDOW_TYPE_NOTIFICATION) {
                 *manage = false;
+                if (a == ewmh->_NET_WM_WINDOW_TYPE_DESKTOP)
+                    window_lower(win);
             }
         }
         xcb_ewmh_get_atoms_reply_wipe(&win_type);
@@ -120,6 +126,8 @@ void handle_rules(xcb_window_t win, monitor_t **m, desktop_t **d, bool *floating
                 *takes_focus = true;
             if (efc.opacity)
                 *opacity = efc.opacity;
+            if (efc.unmanage)
+                *manage = false;
             if (efc.desc[0] != '\0') {
                 coordinates_t ref = {*m, *d, NULL};
                 coordinates_t loc;
@@ -129,7 +137,10 @@ void handle_rules(xcb_window_t win, monitor_t **m, desktop_t **d, bool *floating
                 }
             }
         }
-        rule = rule->next;
+        rule_t *next = rule->next;
+        if (rule->one_shot)
+            remove_rule(rule);
+        rule = next;
     }
 }
 
@@ -148,9 +159,14 @@ void list_rules(char *pattern, char *rsp)
             strncat(rsp, " --follow", REMLEN(rsp));
         if (r->effect.focus)
             strncat(rsp, " --focus", REMLEN(rsp));
-	if (r->effect.opacity != 1.0)
+        if (r->effect.unmanage)
+            strncat(rsp, " --unmanage", REMLEN(rsp));
+        if (r->one_shot)
+            strncat(rsp, " --one-shot", REMLEN(rsp));
+        if (r->effect.opacity != 1.0) {
             snprintf(line, sizeof(line), " --opacity %f", r->effect.opacity);
             strncat(rsp, line, REMLEN(rsp));
+        }
         if (r->effect.desc[0] != '\0') {
             snprintf(line, sizeof(line), " -d %s", r->effect.desc);
             strncat(rsp, line, REMLEN(rsp));
