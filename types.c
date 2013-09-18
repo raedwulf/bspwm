@@ -23,16 +23,13 @@ node_t *make_node(void)
     return n;
 }
 
-monitor_t *make_monitor(xcb_rectangle_t *rect)
+monitor_t *make_monitor(xcb_rectangle_t rect)
 {
     monitor_t *m = malloc(sizeof(monitor_t));
     snprintf(m->name, sizeof(m->name), "%s%02d", DEFAULT_MON_NAME, ++monitor_uid);
     m->prev = m->next = NULL;
     m->desk = m->last_desk = NULL;
-    if (rect != NULL)
-        m->rectangle = *rect;
-    else
-        warn("no rectangle was given for monitor '%s'\n", m->name);
+    m->rectangle = rect;
     m->top_padding = m->right_padding = m->bottom_padding = m->left_padding = 0;
     m->wired = true;
     return m;
@@ -54,7 +51,7 @@ monitor_t *get_monitor_by_id(xcb_randr_output_t id)
     return NULL;
 }
 
-monitor_t *add_monitor(xcb_rectangle_t *rect)
+monitor_t *add_monitor(xcb_rectangle_t rect)
 {
     monitor_t *m = make_monitor(rect);
     if (mon == NULL) {
@@ -125,7 +122,9 @@ void transfer_desktop(monitor_t *ms, monitor_t *md, desktop_t *d)
         desktop_show(d);
     }
 
+    ewmh_update_wm_desktops();
     ewmh_update_desktop_names();
+    ewmh_update_current_desktop();
     put_status();
 }
 
@@ -148,29 +147,35 @@ void swap_monitors(monitor_t *m1, monitor_t *m2)
 
     if (mon_head == m1)
         mon_head = m2;
+    else if (mon_head == m2)
+        mon_head = m1;
     if (mon_tail == m1)
         mon_tail = m2;
+    else if (mon_tail == m2)
+        mon_tail = m1;
 
-    monitor_t *m1p = m1->prev;
-    monitor_t *m1n = m1->next;
-    monitor_t *m2p = m2->prev;
-    monitor_t *m2n = m2->next;
+    monitor_t *p1 = m1->prev;
+    monitor_t *n1 = m1->next;
+    monitor_t *p2 = m2->prev;
+    monitor_t *n2 = m2->next;
 
-    if (m1p != NULL && m1p != m2)
-        m1p->next = m2;
-    if (m1n != NULL && m1n != m2)
-        m1n->prev = m2;
-    if (m2p != NULL && m2p != m1)
-        m2p->next = m1;
-    if (m2n != NULL && m2n != m1)
-        m2n->prev = m1;
+    if (p1 != NULL && p1 != m2)
+        p1->next = m2;
+    if (n1 != NULL && n1 != m2)
+        n1->prev = m2;
+    if (p2 != NULL && p2 != m1)
+        p2->next = m1;
+    if (n2 != NULL && n2 != m1)
+        n2->prev = m1;
 
-    m1->prev = m2p == m1 ? m2 : m2p;
-    m1->next = m2n == m1 ? m2 : m2n;
-    m2->prev = m1p == m2 ? m1 : m1p;
-    m2->next = m1n == m2 ? m1 : m1n;
+    m1->prev = p2 == m1 ? m2 : p2;
+    m1->next = n2 == m1 ? m2 : n2;
+    m2->prev = p1 == m2 ? m1 : p1;
+    m2->next = n1 == m2 ? m1 : n1;
 
+    ewmh_update_wm_desktops();
     ewmh_update_desktop_names();
+    ewmh_update_current_desktop();
     put_status();
 }
 
@@ -185,6 +190,7 @@ desktop_t *make_desktop(const char *name)
     d->prev = d->next = NULL;
     d->root = d->focus = NULL;
     d->history = make_focus_history();
+    d->window_gap = WINDOW_GAP;
     return d;
 }
 
@@ -258,29 +264,35 @@ void swap_desktops(monitor_t *m, desktop_t *d1, desktop_t *d2)
 
     if (m->desk_head == d1)
         m->desk_head = d2;
+    else if (m->desk_head == d2)
+        m->desk_head = d1;
     if (m->desk_tail == d1)
         m->desk_tail = d2;
+    else if (m->desk_tail == d2)
+        m->desk_tail = d1;
 
-    desktop_t *d1p = d1->prev;
-    desktop_t *d1n = d1->next;
-    desktop_t *d2p = d2->prev;
-    desktop_t *d2n = d2->next;
+    desktop_t *p1 = d1->prev;
+    desktop_t *n1 = d1->next;
+    desktop_t *p2 = d2->prev;
+    desktop_t *n2 = d2->next;
 
-    if (d1p != NULL && d1p != d2)
-        d1p->next = d2;
-    if (d1n != NULL && d1n != d2)
-        d1n->prev = d2;
-    if (d2p != NULL && d2p != d1)
-        d2p->next = d1;
-    if (d2n != NULL && d2n != d1)
-        d2n->prev = d1;
+    if (p1 != NULL && p1 != d2)
+        p1->next = d2;
+    if (n1 != NULL && n1 != d2)
+        n1->prev = d2;
+    if (p2 != NULL && p2 != d1)
+        p2->next = d1;
+    if (n2 != NULL && n2 != d1)
+        n2->prev = d1;
 
-    d1->prev = d2p == d1 ? d2 : d2p;
-    d1->next = d2n == d1 ? d2 : d2n;
-    d2->prev = d1p == d2 ? d1 : d1p;
-    d2->next = d1n == d2 ? d1 : d1n;
+    d1->prev = p2 == d1 ? d2 : p2;
+    d1->next = n2 == d1 ? d2 : n2;
+    d2->prev = p1 == d2 ? d1 : p1;
+    d2->next = n1 == d2 ? d1 : n1;
 
+    ewmh_update_wm_desktops();
     ewmh_update_desktop_names();
+    ewmh_update_current_desktop();
     put_status();
 }
 
@@ -308,6 +320,8 @@ rule_t *make_rule(void)
     r->effect.floating = false;
     r->effect.follow = false;
     r->effect.focus = false;
+    r->effect.unmanage = false;
+    r->one_shot = false;
     r->effect.desc[0] = '\0';
     r->prev = NULL;
     r->next = NULL;

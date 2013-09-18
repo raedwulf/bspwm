@@ -210,6 +210,7 @@ void setup(void)
                               ewmh->_NET_WM_STATE_BELOW,
                               ewmh->_NET_WM_WINDOW_TYPE,
                               ewmh->_NET_WM_WINDOW_TYPE_DOCK,
+                              ewmh->_NET_WM_WINDOW_TYPE_DESKTOP,
                               ewmh->_NET_WM_WINDOW_TYPE_NOTIFICATION,
                               ewmh->_NET_WM_WINDOW_TYPE_DIALOG,
                               ewmh->_NET_WM_WINDOW_TYPE_UTILITY,
@@ -236,7 +237,7 @@ void setup(void)
         randr = false;
         warn("Couldn't retrieve monitors via RandR.\n");
         xcb_rectangle_t rect = (xcb_rectangle_t) {0, 0, screen_width, screen_height};
-        monitor_t *m = add_monitor(&rect);
+        monitor_t *m = add_monitor(rect);
         add_desktop(m, make_desktop(NULL));
     }
 
@@ -297,7 +298,7 @@ bool import_monitors(void)
                     mm->wired = true;
                     PRINTF("update monitor %s (0x%X)\n", mm->name, mm->id);
                 } else {
-                    mm = add_monitor(&rect);
+                    mm = add_monitor(rect);
                     char *name = (char *)xcb_randr_get_output_info_name(info);
                     size_t name_len = MIN(sizeof(mm->name), (size_t)xcb_randr_get_output_info_name_length(info));
                     strncpy(mm->name, name, name_len);

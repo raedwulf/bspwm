@@ -38,14 +38,12 @@ void load_settings(void)
     strncpy(urgent_border_color, URGENT_BORDER_COLOR, sizeof(urgent_border_color));
 
     border_width = BORDER_WIDTH;
-    window_gap = WINDOW_GAP;
     split_ratio = SPLIT_RATIO;
 
     borderless_monocle = BORDERLESS_MONOCLE;
     gapless_monocle = GAPLESS_MONOCLE;
     focus_follows_pointer = FOCUS_FOLLOWS_POINTER;
     pointer_follows_monitor = POINTER_FOLLOWS_MONITOR;
-    adaptative_raise = ADAPTATIVE_RAISE;
     apply_floating_atom = APPLY_FLOATING_ATOM;
     auto_alternate = AUTO_ALTERNATE;
     auto_cancel = AUTO_CANCEL;
