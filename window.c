@@ -103,7 +103,7 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
 
     bool floating = false, fullscreen = false, locked = false, follow = false, transient = false, takes_focus = true, manage = true;
     double opacity = 1.0;
-    handle_rules(win, &m, &d, &floating, &fullscreen, &locked, &follow, &transient, &takes_focus, &manage);
+    handle_rules(win, &m, &d, &floating, &fullscreen, &locked, &follow, &transient, &takes_focus, &manage, &opacity);
 
     if (!manage) {
         disable_floating_atom(win);
