@@ -45,10 +45,9 @@ bool auto_raise;
 bool running;
 bool randr;
 
-void register_events(void);
-bool import_monitors(void);
 void init(void);
 void setup(void);
+void register_events(void);
 void put_status(void);
 void cleanup(void);
 void quit(void);

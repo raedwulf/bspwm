@@ -2,26 +2,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/select.h>
-#include <xcb/xcb.h>
-#include <xcb/xcb_event.h>
-#include <xcb/xcb_ewmh.h>
-#include <xcb/randr.h>
 #include "types.h"
+#include "desktop.h"
+#include "monitor.h"
 #include "settings.h"
 #include "messages.h"
-#include "rules.h"
 #include "events.h"
 #include "common.h"
-#include "helpers.h"
-#include "window.h"
 #include "bspwm.h"
 #include "tree.h"
+#include "window.h"
+#include "rule.h"
 #include "ewmh.h"
 
 int main(int argc, char *argv[])
@@ -216,7 +212,6 @@ void setup(void)
                               ewmh->_NET_WM_WINDOW_TYPE_UTILITY,
                               ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR};
 
-    xcb_ewmh_set_wm_name(ewmh, root, strlen(WM_NAME), WM_NAME);
     xcb_ewmh_set_supported(ewmh, default_screen, LENGTH(net_atoms), net_atoms);
     ewmh_set_supporting(motion_recorder);
 
@@ -258,93 +253,6 @@ void register_events(void)
         xcb_disconnect(dpy);
         err("Another window manager is already running.\n");
     }
-}
-
-bool import_monitors(void)
-{
-    PUTS("import monitors");
-    xcb_randr_get_screen_resources_current_reply_t *sres = xcb_randr_get_screen_resources_current_reply(dpy, xcb_randr_get_screen_resources_current(dpy, root), NULL);
-    if (sres == NULL)
-        return false;
-
-    int len = xcb_randr_get_screen_resources_current_outputs_length(sres);
-    xcb_randr_output_t *outputs = xcb_randr_get_screen_resources_current_outputs(sres);
-
-    xcb_randr_get_output_info_cookie_t cookies[len];
-    for (int i = 0; i < len; i++)
-        cookies[i] = xcb_randr_get_output_info(dpy, outputs[i], XCB_CURRENT_TIME);
-
-    for (monitor_t *m = mon_head; m != NULL; m = m->next)
-        m->wired = false;
-
-    monitor_t *mm = NULL;
-    unsigned int num = 0;
-
-    for (int i = 0; i < len; i++) {
-        xcb_randr_get_output_info_reply_t *info = xcb_randr_get_output_info_reply(dpy, cookies[i], NULL);
-        if (info != NULL && info->crtc != XCB_NONE) {
-
-            xcb_randr_get_crtc_info_reply_t *cir = xcb_randr_get_crtc_info_reply(dpy, xcb_randr_get_crtc_info(dpy, info->crtc, XCB_CURRENT_TIME), NULL);
-            if (cir != NULL) {
-                xcb_rectangle_t rect = (xcb_rectangle_t) {cir->x, cir->y, cir->width, cir->height};
-                mm = get_monitor_by_id(outputs[i]);
-                if (mm != NULL) {
-                    mm->rectangle = rect;
-                    for (desktop_t *d = mm->desk_head; d != NULL; d = d->next)
-                        for (node_t *n = first_extrema(d->root); n != NULL; n = next_leaf(n, d->root))
-                            fit_monitor(mm, n->client);
-                    arrange(mm, mm->desk);
-                    mm->wired = true;
-                    PRINTF("update monitor %s (0x%X)\n", mm->name, mm->id);
-                } else {
-                    mm = add_monitor(rect);
-                    char *name = (char *)xcb_randr_get_output_info_name(info);
-                    size_t name_len = MIN(sizeof(mm->name), (size_t)xcb_randr_get_output_info_name_length(info));
-                    strncpy(mm->name, name, name_len);
-                    mm->name[name_len] = '\0';
-                    mm->id = outputs[i];
-                    PRINTF("add monitor %s (0x%X)\n", mm->name, mm->id);
-                }
-                num++;
-            }
-            free(cir);
-        }
-        free(info);
-    }
-
-    /* initially focus the primary monitor and add the first desktop to it */
-    xcb_randr_get_output_primary_reply_t *gpo = xcb_randr_get_output_primary_reply(dpy, xcb_randr_get_output_primary(dpy, root), NULL);
-    if (gpo != NULL) {
-        pri_mon = get_monitor_by_id(gpo->output);
-        if (!running && pri_mon != NULL) {
-            if (mon != pri_mon)
-                mon = pri_mon;
-            add_desktop(pri_mon, make_desktop(NULL));
-            ewmh_update_current_desktop();
-        }
-    }
-    free(gpo);
-
-    /* add one desktop to each new monitor */
-    for (monitor_t *m = mon_head; m != NULL; m = m->next)
-        if (m->desk == NULL && (running || pri_mon == NULL || m != pri_mon))
-            add_desktop(m, make_desktop(NULL));
-
-    /* merge and remove disconnected monitors */
-    monitor_t *m = mon_head;
-    while (m != NULL) {
-        monitor_t *next = m->next;
-        if (!m->wired) {
-            PRINTF("remove monitor %s (0x%X)\n", m->name, m->id);
-            merge_monitors(m, mm);
-            remove_monitor(m);
-        }
-        m = next;
-    }
-
-    free(sres);
-    update_motion_recorder();
-    return (num_monitors > 0);
 }
 
 void quit(void)

@@ -1,11 +1,13 @@
 #include <ctype.h>
 #include <string.h>
-#include "types.h"
+#include "bspwm.h"
+#include "monitor.h"
+#include "desktop.h"
 #include "tree.h"
 #include "settings.h"
-#include "ewmh.h"
-#include "bspwm.h"
 #include "query.h"
+#include "history.h"
+#include "ewmh.h"
 #include "restore.h"
 
 void restore_tree(char *file_path)
