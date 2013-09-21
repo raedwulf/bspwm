@@ -142,6 +142,8 @@ void handle_rules(xcb_window_t win, monitor_t **m, desktop_t **d, bool *floating
                 *takes_focus = true;
             if (efc.opacity)
                 *opacity = efc.opacity;
+            else
+                *opacity = 1.0;
             if (efc.unmanage)
                 *manage = false;
             if (efc.desc[0] != '\0') {
