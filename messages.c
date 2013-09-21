@@ -3,18 +3,17 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "settings.h"
-#include "messages.h"
 #include "query.h"
-#include "restore.h"
-#include "common.h"
-#include "types.h"
 #include "bspwm.h"
-#include "ewmh.h"
-#include "helpers.h"
-#include "window.h"
-#include "events.h"
 #include "tree.h"
-#include "rules.h"
+#include "desktop.h"
+#include "monitor.h"
+#include "window.h"
+#include "rule.h"
+#include "restore.h"
+#include "events.h"
+#include "ewmh.h"
+#include "messages.h"
 
 bool cmd_window(char **args, int num)
 {
@@ -286,7 +285,7 @@ bool cmd_desktop(char **args, int num)
             if (trg.desktop->root == NULL
                     && trg.monitor->desk_head != trg.monitor->desk_tail) {
                 remove_desktop(trg.monitor, trg.desktop);
-                desktop_show(trg.monitor->desk);
+                show_desktop(trg.monitor->desk);
                 update_current();
                 return true;
             } else {
@@ -384,7 +383,7 @@ bool cmd_monitor(char **args, int num)
                 coordinates_t dst;
                 if (locate_desktop(*args, &dst) && dst.monitor->desk_head != dst.monitor->desk_tail && dst.desktop->root == NULL) {
                     remove_desktop(dst.monitor, dst.desktop);
-                    desktop_show(dst.monitor->desk);
+                    show_desktop(dst.monitor->desk);
                 }
                 num--, args++;
             }
@@ -487,6 +486,10 @@ bool cmd_rule(char **args, int num, char *rsp) {
             while (num > 0) {
                 if (streq("--floating", *args)) {
                     rule->effect.floating = true;
+                } else if (streq("--fullscreen", *args)) {
+                    rule->effect.fullscreen = true;
+                } else if (streq("--locked", *args)) {
+                    rule->effect.locked = true;
                 } else if (streq("--follow", *args)) {
                     rule->effect.follow = true;
                 } else if (streq("--focus", *args)) {
