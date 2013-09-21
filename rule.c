@@ -1,13 +1,25 @@
 #include <stdio.h>
 #include <string.h>
-#include <xcb/xcb_icccm.h>
-#include <xcb/xcb_ewmh.h>
-#include "window.h"
-#include "types.h"
 #include "bspwm.h"
 #include "ewmh.h"
-#include "rules.h"
+#include "window.h"
 #include "query.h"
+#include "rule.h"
+
+rule_t *make_rule(void)
+{
+    rule_t *r = malloc(sizeof(rule_t));
+    r->uid = ++rule_uid;
+    r->effect.floating = false;
+    r->effect.follow = false;
+    r->effect.focus = false;
+    r->effect.unmanage = false;
+    r->one_shot = false;
+    r->effect.desc[0] = '\0';
+    r->prev = NULL;
+    r->next = NULL;
+    return r;
+}
 
 void add_rule(rule_t *r)
 {
@@ -65,7 +77,7 @@ bool is_match(rule_t *r, xcb_window_t win)
     return false;
 }
 
-void handle_rules(xcb_window_t win, monitor_t **m, desktop_t **d, bool *floating, bool *follow, bool *transient, bool *fullscreen, bool *takes_focus, bool *manage, double *opacity)
+void handle_rules(xcb_window_t win, monitor_t **m, desktop_t **d, bool *floating, bool *fullscreen, bool *locked, bool *follow, bool *transient, bool *takes_focus, bool *manage, double *opacity)
 {
     xcb_ewmh_get_atoms_reply_t win_type;
 
@@ -120,12 +132,18 @@ void handle_rules(xcb_window_t win, monitor_t **m, desktop_t **d, bool *floating
             rule_effect_t efc = rule->effect;
             if (efc.floating)
                 *floating = true;
+            if (efc.fullscreen)
+                *fullscreen = true;
+            if (efc.locked)
+                *locked = true;
             if (efc.follow)
                 *follow = true;
             if (efc.focus)
                 *takes_focus = true;
             if (efc.opacity)
                 *opacity = efc.opacity;
+            else
+                *opacity = 1.0;
             if (efc.unmanage)
                 *manage = false;
             if (efc.desc[0] != '\0') {
@@ -155,6 +173,10 @@ void list_rules(char *pattern, char *rsp)
         strncat(rsp, line, REMLEN(rsp));
         if (r->effect.floating)
             strncat(rsp, " --floating", REMLEN(rsp));
+        if (r->effect.fullscreen)
+            strncat(rsp, " --fullscreen", REMLEN(rsp));
+        if (r->effect.locked)
+            strncat(rsp, " --locked", REMLEN(rsp));
         if (r->effect.follow)
             strncat(rsp, " --follow", REMLEN(rsp));
         if (r->effect.focus)

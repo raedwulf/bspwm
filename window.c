@@ -1,18 +1,25 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
-#include <xcb/xcb.h>
-#include <xcb/xcb_event.h>
-#include <xcb/xcb_icccm.h>
 #include "types.h"
+#include "monitor.h"
 #include "tree.h"
 #include "bspwm.h"
 #include "settings.h"
 #include "ewmh.h"
-#include "rules.h"
 #include "query.h"
+#include "rule.h"
 #include "window.h"
+
+pointer_state_t *make_pointer_state(void)
+{
+    pointer_state_t *p = malloc(sizeof(pointer_state_t));
+    p->monitor = NULL;
+    p->desktop = NULL;
+    p->node = p->vertical_fence = p->horizontal_fence = NULL;
+    p->client = NULL;
+    p->window = XCB_NONE;
+    return p;
+}
 
 void center(xcb_rectangle_t a, xcb_rectangle_t *b)
 {
@@ -118,10 +125,9 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
     if (override_redirect || locate_window(win, &loc))
         return;
 
-    bool floating = false, follow = false, transient = false, fullscreen = false, takes_focus = true, manage = true;
+    bool floating = false, fullscreen = false, locked = false, follow = false, transient = false, takes_focus = true, manage = true;
     double opacity = 1.0;
-
-    handle_rules(win, &m, &d, &floating, &follow, &transient, &fullscreen, &takes_focus, &manage, &opacity);
+    handle_rules(win, &m, &d, &floating, &fullscreen, &locked, &follow, &transient, &takes_focus, &manage);
 
     if (!manage) {
         disable_floating_atom(win);
@@ -147,22 +153,19 @@ void manage_window(monitor_t *m, desktop_t *d, xcb_window_t win)
     insert_node(m, d, n, d->focus);
 
     disable_floating_atom(c->window);
-
-    if (floating)
-        set_floating(d, n, true);
+    set_floating(d, n, floating);
+    set_locked(m, d, n, locked);
 
     if (d->focus != NULL && d->focus->client->fullscreen)
         set_fullscreen(d, d->focus, false);
 
-    if (fullscreen)
-        set_fullscreen(d, n, true);
+    set_fullscreen(d, n, fullscreen);
 
     if (opacity >= 0.0 && opacity < 1.0)
         set_opacity(n, opacity);
     c->transient = transient;
 
     bool give_focus = (takes_focus && (d == mon->desk || follow));
-
     if (give_focus) {
         focus_node(m, d, n);
     } else if (takes_focus) {
@@ -656,22 +659,6 @@ void toggle_visibility(void)
             window_set_visibility(n->client->window, visible);
     if (visible)
         update_input_focus();
-}
-
-void desktop_show(desktop_t *d)
-{
-    if (!visible)
-        return;
-    for (node_t *n = first_extrema(d->root); n != NULL; n = next_leaf(n, d->root))
-        window_show(n->client->window);
-}
-
-void desktop_hide(desktop_t *d)
-{
-    if (!visible)
-        return;
-    for (node_t *n = first_extrema(d->root); n != NULL; n = next_leaf(n, d->root))
-        window_hide(n->client->window);
 }
 
 void enable_motion_recorder(void)
