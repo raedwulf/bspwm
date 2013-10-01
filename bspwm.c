@@ -17,6 +17,8 @@
 #include "bspwm.h"
 #include "tree.h"
 #include "window.h"
+#include "history.h"
+#include "stack.h"
 #include "rule.h"
 #include "ewmh.h"
 
@@ -46,7 +48,7 @@ int main(int argc, char *argv[])
                 exit(EXIT_SUCCESS);
                 break;
             case 'c':
-                strncpy(config_path, optarg, sizeof(config_path));
+                snprintf(config_path, sizeof(config_path), "%s", optarg);
                 break;
             case 's':
                 fifo_path = optarg;
@@ -75,10 +77,10 @@ int main(int argc, char *argv[])
     dpy_fd = xcb_get_file_descriptor(dpy);
 
     char *sp = getenv(SOCKET_ENV_VAR);
-    strncpy(socket_path, (sp == NULL ? DEFAULT_SOCKET_PATH : sp), sizeof(socket_path));
+    snprintf(socket_path, sizeof(socket_path), "%s", (sp == NULL ? DEFAULT_SOCKET_PATH : sp));
 
     sock_address.sun_family = AF_UNIX;
-    strncpy(sock_address.sun_path, socket_path, sizeof(sock_address.sun_path));
+    snprintf(sock_address.sun_path, sizeof(sock_address.sun_path), "%s", socket_path);
     unlink(socket_path);
 
     sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -163,8 +165,10 @@ void init(void)
 {
     num_monitors = num_desktops = num_clients = 0;
     monitor_uid = desktop_uid = rule_uid = 0;
-    mon = last_mon = mon_head = mon_tail = pri_mon = NULL;
+    mon = mon_head = mon_tail = pri_mon = NULL;
     rule_head = rule_tail = NULL;
+    history_head = history_tail = NULL;
+    stack_head = stack_tail = NULL;
     status_fifo = NULL;
     last_motion_time = last_motion_x = last_motion_y = 0;
     randr_base = 0;
@@ -265,6 +269,9 @@ void cleanup(void)
         remove_monitor(mon_head);
     while (rule_head != NULL)
         remove_rule(rule_head);
+    while (stack_head != NULL)
+        remove_stack(stack_head);
+    empty_history();
     free(frozen_pointer);
 }
 

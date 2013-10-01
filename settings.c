@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include "bspwm.h"
@@ -23,17 +22,18 @@ void run_config(void)
 
 void load_settings(void)
 {
-    strncpy(normal_border_color, NORMAL_BORDER_COLOR, sizeof(normal_border_color));
-    strncpy(focused_border_color, FOCUSED_BORDER_COLOR, sizeof(focused_border_color));
-    strncpy(active_border_color, ACTIVE_BORDER_COLOR, sizeof(active_border_color));
-    strncpy(presel_border_color, PRESEL_BORDER_COLOR, sizeof(presel_border_color));
-    strncpy(focused_locked_border_color, FOCUSED_LOCKED_BORDER_COLOR, sizeof(focused_locked_border_color));
-    strncpy(active_locked_border_color, ACTIVE_LOCKED_BORDER_COLOR, sizeof(active_locked_border_color));
-    strncpy(normal_locked_border_color, NORMAL_LOCKED_BORDER_COLOR, sizeof(normal_locked_border_color));
-    strncpy(urgent_border_color, URGENT_BORDER_COLOR, sizeof(urgent_border_color));
+    snprintf(normal_border_color, sizeof(normal_border_color), "%s", NORMAL_BORDER_COLOR);
+    snprintf(focused_border_color, sizeof(focused_border_color), "%s", FOCUSED_BORDER_COLOR);
+    snprintf(active_border_color, sizeof(active_border_color), "%s", ACTIVE_BORDER_COLOR);
+    snprintf(presel_border_color, sizeof(presel_border_color), "%s", PRESEL_BORDER_COLOR);
+    snprintf(focused_locked_border_color, sizeof(focused_locked_border_color), "%s", FOCUSED_LOCKED_BORDER_COLOR);
+    snprintf(active_locked_border_color, sizeof(active_locked_border_color), "%s", ACTIVE_LOCKED_BORDER_COLOR);
+    snprintf(normal_locked_border_color, sizeof(normal_locked_border_color), "%s", NORMAL_LOCKED_BORDER_COLOR);
+    snprintf(urgent_border_color, sizeof(urgent_border_color), "%s", URGENT_BORDER_COLOR);
 
     border_width = BORDER_WIDTH;
     split_ratio = SPLIT_RATIO;
+    growth_factor = GROWTH_FACTOR;
 
     borderless_monocle = BORDERLESS_MONOCLE;
     gapless_monocle = GAPLESS_MONOCLE;
@@ -43,4 +43,5 @@ void load_settings(void)
     auto_alternate = AUTO_ALTERNATE;
     auto_cancel = AUTO_CANCEL;
     history_aware_focus = HISTORY_AWARE_FOCUS;
+    honor_ewmh_focus = HONOR_EWMH_FOCUS;
 }

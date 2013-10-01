@@ -1,4 +1,4 @@
-VERSION = 0.8
+VERSION = 0.8.5
 
 CC      ?= gcc
 LIBS     = -lm -lxcb -lxcb-icccm -lxcb-ewmh -lxcb-randr
@@ -12,8 +12,8 @@ MANPREFIX = $(PREFIX)/share/man
 BASHCPL = $(PREFIX)/share/bash-completion/completions
 ZSHCPL = $(PREFIX)/share/zsh/site-functions
 
-WM_SRC = bspwm.c helpers.c settings.c monitor.c desktop.c tree.c history.c \
-	 events.c window.c messages.c query.c restore.c rule.c ewmh.c
+WM_SRC = bspwm.c helpers.c settings.c monitor.c desktop.c tree.c stack.c history.c \
+	 events.c pointer.c window.c messages.c query.c restore.c rule.c ewmh.c
 WM_OBJ = $(WM_SRC:.c=.o)
 CL_SRC = bspc.c helpers.c
 CL_OBJ = $(CL_SRC:.c=.o)

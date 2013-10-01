@@ -421,6 +421,9 @@ Options
 *-H*, *--history*::
     Print the history as it relates to the query.
 
+*-S*, *--stack*::
+    Print the window stacking order.
+
 [*-m*,*--monitor* ['MONITOR_SEL']] | [*-d*,*--desktop* ['DESKTOP_SEL']] | [*-w*, *--window* ['WINDOW_SEL']]::
     Constrain matches to the selected monitor, desktop or window.
 
@@ -440,6 +443,9 @@ Options
 
 *-H*, *--history* <file_path>::
     Load the focus history from the given file.
+
+*-S*, *--stack* <file_path>::
+    Load the window stacking order from the given file.
 
 Control
 ~~~~~~~
@@ -555,6 +561,9 @@ Global Settings
 'split_ratio'::
     Default split ratio.
 
+'growth_factor'::
+    Intensity of the growth involved in pulling or pushing an edge.
+
 'history_aware_focus'::
     Give priority to the focus history when focusing nodes.
 
@@ -578,6 +587,9 @@ Global Settings
 
 'apply_floating_atom'::
     Set the value of the '_BSPWM_FLOATING_WINDOW' atom of each window according to its floating state.
+
+'honor_ewmh_focus'::
+    Honor EWMH requests to focus a window.
 
 Monitor Settings
 ~~~~~~~~~~~~~~~~

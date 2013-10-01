@@ -134,7 +134,7 @@ typedef struct {
 
 typedef struct {
     xcb_window_t window;
-    char class_name[MAXLEN];
+    char class_name[SMALEN];
     unsigned int border_width;
     bool floating;
     bool transient;    /* transient window are always floating */
@@ -162,26 +162,12 @@ struct node_t {
     client_t *client;     /* NULL except for leaves */
 };
 
-typedef struct node_list_t node_list_t;
-struct node_list_t {
-    node_t *node;
-    bool latest;
-    node_list_t *prev;
-    node_list_t *next;
-};
-
-typedef struct {
-    node_list_t *head;
-    node_list_t *tail;
-} focus_history_t;
-
 typedef struct desktop_t desktop_t;
 struct desktop_t {
-    char name[MAXLEN];
+    char name[SMALEN];
     layout_t layout;
     node_t *root;
     node_t *focus;
-    focus_history_t *history;
     desktop_t *prev;
     desktop_t *next;
     int window_gap;
@@ -189,16 +175,16 @@ struct desktop_t {
 
 typedef struct monitor_t monitor_t;
 struct monitor_t {
-    char name[MAXLEN];
+    char name[SMALEN];
     xcb_randr_output_t id;
     xcb_rectangle_t rectangle;
+    xcb_window_t root;
     bool wired;
     int top_padding;
     int right_padding;
     int bottom_padding;
     int left_padding;
     desktop_t *desk;
-    desktop_t *last_desk;
     desktop_t *desk_head;
     desktop_t *desk_tail;
     monitor_t *prev;
@@ -211,8 +197,23 @@ typedef struct {
     node_t *node;
 } coordinates_t;
 
+typedef struct history_t history_t;
+struct history_t {
+    coordinates_t loc;
+    bool latest;
+    history_t *prev;
+    history_t *next;
+};
+
+typedef struct stack_t stack_t;
+struct stack_t {
+    node_t *node;
+    stack_t *prev;
+    stack_t *next;
+};
+
 typedef struct {
-    char name[MAXLEN];
+    char name[SMALEN];
 } rule_cause_t;
 
 typedef struct {

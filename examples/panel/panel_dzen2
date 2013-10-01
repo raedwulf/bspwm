@@ -32,15 +32,15 @@ shift $((OPTIND - 1))
 while read -r line ; do
     case $line in
         S*)
-            # system informations
-            sys_infos="^fg($COLOR_STATUS_FG)^bg($COLOR_STATUS_BG)^ca(1, bspc control --toggle-visibility)${PADDING}${line#?}${PADDING}^ca()^fg()^bg()${PADDING}"
+            # clock output
+            sys_infos="^fg($COLOR_STATUS_FG)^bg($COLOR_STATUS_BG)${PADDING}${line#?}${PADDING}^fg()^bg()${PADDING}"
             ;;
         T*)
-            # focused window title
-            title="^fg($COLOR_TITLE_FG)^bg($COLOR_TITLE_BG)^ca(1, bspc window -t floating)^ca(2, bspc window -t locked)^ca(3, bspc window -c)${PADDING}${line#?}${PADDING}^ca()^ca()^ca()^fg()^bg()"
+            # xtitle output
+            title="^fg($COLOR_TITLE_FG)^bg($COLOR_TITLE_BG)${PADDING}${line#?}${PADDING}^fg()^bg()"
             ;;
         W*)
-            # window manager informations
+            # bspwm internal state
             wm_infos="$PADDING"
             IFS=$FIELDIFS
             set -- ${line#?}
@@ -51,33 +51,43 @@ while read -r line ; do
                         # desktops
                         name=${item#?}
                         case $item in
-                            [OFU]*)
-                                # active desktop
-                                FG=$COLOR_ACTIVE_FG
-                                BG=$COLOR_ACTIVE_BG
+                            O*)
+                                # focused occupied desktop
+                                FG=$COLOR_FOCUSED_OCCUPIED_FG
+                                BG=$COLOR_FOCUSED_OCCUPIED_BG
+                                ;;
+                            F*)
+                                # focused free desktop
+                                FG=$COLOR_FOCUSED_FREE_FG
+                                BG=$COLOR_FOCUSED_FREE_BG
+                                ;;
+                            U*)
+                                # focused urgent desktop
+                                FG=$COLOR_FOCUSED_URGENT_FG
+                                BG=$COLOR_FOCUSED_URGENT_BG
                                 ;;
                             o*)
-                                # inactive desktop
-                                FG=$COLOR_INACTIVE_FG
-                                BG=$COLOR_INACTIVE_BG
+                                # occupied desktop
+                                FG=$COLOR_OCUPPIED_FG
+                                BG=$COLOR_OCUPPIED_BG
                                 ;;
                             f*)
-                                # empty desktop
-                                FG=$COLOR_EMPTY_FG
-                                BG=$COLOR_EMPTY_BG
+                                # free desktop
+                                FG=$COLOR_FREE_FG
+                                BG=$COLOR_FREE_BG
                                 ;;
                             u*)
-                                # urgent (inactive) desktop
+                                # urgent desktop
                                 FG=$COLOR_URGENT_FG
                                 BG=$COLOR_URGENT_BG
                                 ;;
                         esac
-                        wm_infos="${wm_infos}^fg(${FG})^bg(${BG})^ca(1, bspc desktop -f ${name})^ca(2, bspc window -d ${name})^ca(3, bspc window -d ${name} -f)${PADDING}${name}${PADDING}^ca()^ca()^ca()"
+                        wm_infos="${wm_infos}^fg(${FG})^bg(${BG})${PADDING}${name}${PADDING}"
                         ;;
                     L*)
                         # layout
                         layout=$(printf "%s" "${item#?}" | sed 's/^\(.\).*/\U\1/')
-                        wm_infos="${wm_infos}^fg()^bg()${PADDING}${PADDING}^fg($COLOR_LAYOUT_FG)^bg($COLOR_LAYOUT_BG)^ca(1, bspc desktop -l next)^ca(2, bspc desktop -B)${PADDING}$layout${PADDING}^ca()^ca()"
+                        wm_infos="${wm_infos}^fg()^bg()${PADDING}${PADDING}^fg($COLOR_LAYOUT_FG)^bg($COLOR_LAYOUT_BG)${PADDING}$layout${PADDING}"
                         ;;
                 esac
                 shift

@@ -1,19 +1,83 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <errno.h>
-#include "settings.h"
-#include "query.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "bspwm.h"
-#include "tree.h"
 #include "desktop.h"
-#include "monitor.h"
-#include "window.h"
-#include "rule.h"
-#include "restore.h"
-#include "events.h"
 #include "ewmh.h"
+#include "history.h"
+#include "monitor.h"
+#include "pointer.h"
+#include "query.h"
+#include "restore.h"
+#include "rule.h"
+#include "settings.h"
+#include "tree.h"
+#include "window.h"
 #include "messages.h"
+
+bool handle_message(char *msg, int msg_len, char *rsp)
+{
+    int cap = INIT_CAP;
+    int num = 0;
+    char **args = malloc(cap * sizeof(char *));
+    if (args == NULL)
+        return false;
+
+    for (int i = 0, j = 0; i < msg_len; i++) {
+        if (msg[i] == 0) {
+            args[num++] = msg + j;
+            j = i + 1;
+        }
+        if (num >= cap) {
+            cap *= 2;
+            char **new = realloc(args, cap * sizeof(char *));
+            if (new == NULL) {
+                free(args);
+                return false;
+            } else {
+                args = new;
+            }
+        }
+    }
+
+    if (num < 1) {
+        free(args);
+        return false;
+    }
+
+    char **args_orig = args;
+    bool ret = process_message(args, num, rsp);
+    free(args_orig);
+    return ret;
+}
+
+bool process_message(char **args, int num, char *rsp)
+{
+    if (streq("window", *args)) {
+        return cmd_window(++args, --num);
+    } else if (streq("desktop", *args)) {
+        return cmd_desktop(++args, --num);
+    } else if (streq("monitor", *args)) {
+        return cmd_monitor(++args, --num);
+    } else if (streq("query", *args)) {
+        return cmd_query(++args, --num, rsp);
+    } else if (streq("restore", *args)) {
+        return cmd_restore(++args, --num);
+    } else if (streq("control", *args)) {
+        return cmd_control(++args, --num);
+    } else if (streq("rule", *args)) {
+        return cmd_rule(++args, --num, rsp);
+    } else if (streq("pointer", *args)) {
+        return cmd_pointer(++args, --num);
+    } else if (streq("config", *args)) {
+        return cmd_config(++args, --num, rsp);
+    } else if (streq("quit", *args)) {
+        return cmd_quit(++args, --num);
+    }
+
+    return false;
+}
 
 bool cmd_window(char **args, int num)
 {
@@ -48,7 +112,7 @@ bool cmd_window(char **args, int num)
             num--, args++;
             coordinates_t dst;
             if (desktop_from_desc(*args, &trg, &dst)) {
-                transfer_node(trg.monitor, trg.desktop, dst.monitor, dst.desktop, trg.node);
+                transfer_node(trg.monitor, trg.desktop, trg.node, dst.monitor, dst.desktop, dst.desktop->focus);
                 trg.monitor = dst.monitor;
                 trg.desktop = dst.desktop;
             } else {
@@ -60,7 +124,7 @@ bool cmd_window(char **args, int num)
                 return false;
             coordinates_t dst;
             if (monitor_from_desc(*args, &trg, &dst)) {
-                transfer_node(trg.monitor, trg.desktop, dst.monitor, dst.monitor->desk, trg.node);
+                transfer_node(trg.monitor, trg.desktop, trg.node, dst.monitor, dst.monitor->desk, dst.monitor->desk->focus);
                 trg.monitor = dst.monitor;
                 trg.desktop = dst.monitor->desk;
             } else {
@@ -72,7 +136,7 @@ bool cmd_window(char **args, int num)
                 return false;
             coordinates_t dst;
             if (node_from_desc(*args, &trg, &dst))
-                transplant_node(trg.monitor, trg.desktop, trg.node, dst.node);
+                transfer_node(trg.monitor, trg.desktop, trg.node, dst.monitor, dst.desktop, dst.node);
             else
                 return false;
             dirty = true;
@@ -82,9 +146,11 @@ bool cmd_window(char **args, int num)
                 return false;
             coordinates_t dst;
             if (node_from_desc(*args, &trg, &dst))
-                swap_nodes(trg.node, dst.node);
+                swap_nodes(trg.monitor, trg.desktop, trg.node, dst.monitor, dst.desktop, dst.node);
             else
                 return false;
+            if (trg.desktop != dst.desktop)
+                arrange(dst.monitor, dst.desktop);
             dirty = true;
         } else if (streq("-t", *args) || streq("--toggle", *args)) {
             num--, args++;
@@ -103,10 +169,10 @@ bool cmd_window(char **args, int num)
                     return false;
             }
             if (streq("fullscreen", key)) {
-                set_fullscreen(trg.desktop, trg.node, (a == ALTER_SET ? b : !trg.node->client->fullscreen));
+                set_fullscreen(trg.node, (a == ALTER_SET ? b : !trg.node->client->fullscreen));
                 dirty = true;
             } else if (streq("floating", key)) {
-                set_floating(trg.desktop, trg.node, (a == ALTER_SET ? b : !trg.node->client->floating));
+                set_floating(trg.node, (a == ALTER_SET ? b : !trg.node->client->floating));
                 dirty = true;
             } else if (streq("locked", key)) {
                 set_locked(trg.monitor, trg.desktop, trg.node, (a == ALTER_SET ? b : !trg.node->client->locked));
@@ -238,8 +304,12 @@ bool cmd_desktop(char **args, int num)
                 if (!desktop_from_desc(*args, &trg, &dst))
                     return false;
             }
-            if (auto_alternate && dst.desktop == dst.monitor->desk && dst.monitor->last_desk != NULL)
-                dst.desktop = dst.monitor->last_desk;
+            if (auto_alternate && dst.desktop == dst.monitor->desk) {
+                desktop_select_t sel;
+                sel.status = DESKTOP_STATUS_ALL;
+                sel.urgency = DESKTOP_URGENCY_ALL;
+                history_last_desktop(dst.desktop, sel, &dst);
+            }
             focus_node(dst.monitor, dst.desktop, dst.desktop->focus);
         } else if (streq("-m", *args) || streq("--to-monitor", *args)) {
             num--, args++;
@@ -259,7 +329,7 @@ bool cmd_desktop(char **args, int num)
                 return false;
             coordinates_t dst;
             if (desktop_from_desc(*args, &trg, &dst) && trg.monitor == dst.monitor)
-                swap_desktops(dst.monitor, trg.desktop, dst.desktop);
+                swap_desktops(trg.monitor, trg.desktop, dst.monitor, dst.desktop);
             else
                 return false;
         } else if (streq("-l", *args) || streq("--layout", *args)) {
@@ -278,7 +348,7 @@ bool cmd_desktop(char **args, int num)
             num--, args++;
             if (num < 1)
                 return false;
-            strncpy(trg.desktop->name, *args, sizeof(trg.desktop->name));
+            snprintf(trg.desktop->name, sizeof(trg.desktop->name), "%s", *args);
             ewmh_update_desktop_names();
             put_status();
         } else if (streq("-r", *args) || streq("--remove", *args)) {
@@ -364,8 +434,12 @@ bool cmd_monitor(char **args, int num)
                 if (!monitor_from_desc(*args, &trg, &dst))
                     return false;
             }
-            if (auto_alternate && dst.monitor == mon && last_mon != NULL)
-                dst.monitor = last_mon;
+            if (auto_alternate && dst.monitor == mon) {
+                desktop_select_t sel;
+                sel.status = DESKTOP_STATUS_ALL;
+                sel.urgency = DESKTOP_URGENCY_ALL;
+                history_last_monitor(dst.monitor, sel, &dst);
+            }
             focus_node(dst.monitor, dst.monitor->desk, dst.monitor->desk->focus);
         } else if (streq("-a", *args) || streq("--add-desktops", *args)) {
             num--, args++;
@@ -391,7 +465,7 @@ bool cmd_monitor(char **args, int num)
             num--, args++;
             if (num < 1)
                 return false;
-            strncpy(trg.monitor->name, *args, sizeof(trg.monitor->name));
+            snprintf(trg.monitor->name, sizeof(trg.monitor->name), "%s", *args);
             put_status();
         } else if (streq("-s", *args) || streq("--swap", *args)) {
             num--, args++;
@@ -428,6 +502,8 @@ bool cmd_query(char **args, int num, char *rsp) {
             dom = DOMAIN_WINDOW, d++;
         } else if (streq("-H", *args) || streq("--history", *args)) {
             dom = DOMAIN_HISTORY, d++;
+        } else if (streq("-S", *args) || streq("--stack", *args)) {
+            dom = DOMAIN_STACK, d++;
         } else if (streq("-m", *args) || streq("--monitor", *args)) {
             trg.monitor = ref.monitor;
             if (num > 1 && *(args + 1)[0] != OPT_CHR) {
@@ -464,6 +540,8 @@ bool cmd_query(char **args, int num, char *rsp) {
 
     if (dom == DOMAIN_HISTORY)
         query_history(trg, rsp);
+    else if (dom == DOMAIN_STACK)
+        query_stack(rsp);
     else if (dom == DOMAIN_WINDOW)
         query_windows(trg, rsp);
     else
@@ -481,7 +559,7 @@ bool cmd_rule(char **args, int num, char *rsp) {
             if (num < 2)
                 return false;
             rule_t *rule = make_rule();
-            strncpy(rule->cause.name, *args, sizeof(rule->cause.name));
+            snprintf(rule->cause.name, sizeof(rule->cause.name), "%s", *args);
             num--, args++;
             while (num > 0) {
                 if (streq("--floating", *args)) {
@@ -513,7 +591,7 @@ bool cmd_rule(char **args, int num, char *rsp) {
                         rule_uid--;
                         return false;
                     }
-                    strncpy(rule->effect.desc, *args, sizeof(rule->effect.desc));
+                    snprintf(rule->effect.desc, sizeof(rule->effect.desc), "%s", *args);
                 } else {
                     free(rule);
                     rule_uid--;
@@ -595,6 +673,11 @@ bool cmd_restore(char **args, int num) {
             if (num < 1)
                 return false;
             restore_history(*args);
+        } else if (streq("-S", *args) || streq("--stack", *args)) {
+            num--, args++;
+            if (num < 1)
+                return false;
+            restore_stack(*args);
         } else {
             return false;
         }
@@ -661,69 +744,6 @@ bool cmd_quit(char **args, int num) {
     return true;
 }
 
-bool handle_message(char *msg, int msg_len, char *rsp)
-{
-    int cap = INIT_CAP;
-    int num = 0;
-    char **args = malloc(cap * sizeof(char *));
-    if (args == NULL)
-        return false;
-
-    for (int i = 0, j = 0; i < msg_len; i++) {
-        if (msg[i] == 0) {
-            args[num++] = msg + j;
-            j = i + 1;
-        }
-        if (num >= cap) {
-            cap *= 2;
-            char **new = realloc(args, cap * sizeof(char *));
-            if (new == NULL) {
-                free(args);
-                return false;
-            } else {
-                args = new;
-            }
-        }
-    }
-
-    if (num < 1) {
-        free(args);
-        return false;
-    }
-
-    char **args_orig = args;
-    bool ret = process_message(args, num, rsp);
-    free(args_orig);
-    return ret;
-}
-
-bool process_message(char **args, int num, char *rsp)
-{
-    if (streq("window", *args)) {
-        return cmd_window(++args, --num);
-    } else if (streq("desktop", *args)) {
-        return cmd_desktop(++args, --num);
-    } else if (streq("monitor", *args)) {
-        return cmd_monitor(++args, --num);
-    } else if (streq("query", *args)) {
-        return cmd_query(++args, --num, rsp);
-    } else if (streq("restore", *args)) {
-        return cmd_restore(++args, --num);
-    } else if (streq("control", *args)) {
-        return cmd_control(++args, --num);
-    } else if (streq("rule", *args)) {
-        return cmd_rule(++args, --num, rsp);
-    } else if (streq("pointer", *args)) {
-        return cmd_pointer(++args, --num);
-    } else if (streq("config", *args)) {
-        return cmd_config(++args, --num, rsp);
-    } else if (streq("quit", *args)) {
-        return cmd_quit(++args, --num);
-    }
-
-    return false;
-}
-
 bool set_setting(coordinates_t loc, char *name, char *value)
 {
     if (streq("border_width", name)) {
@@ -758,14 +778,22 @@ bool set_setting(coordinates_t loc, char *name, char *value)
     MONSET(left_padding)
 #undef MONSET
     } else if (streq("split_ratio", name)) {
-        double rat;
-        if (sscanf(value, "%lf", &rat) == 1 && rat > 0 && rat < 1)
-            split_ratio = rat;
+        double r;
+        if (sscanf(value, "%lf", &r) == 1 && r > 0 && r < 1)
+            split_ratio = r;
         else
             return false;
+        return true;
+    } else if (streq("growth_factor", name)) {
+        double g;
+        if (sscanf(value, "%lf", &g) == 1 && g > 1)
+            growth_factor = g;
+        else
+            return false;
+        return true;
 #define SETCOLOR(s) \
     } else if (streq(#s, name)) { \
-        strncpy(s, value, sizeof(s));
+        snprintf(s, sizeof(s), "%s", value);
     SETCOLOR(focused_border_color)
     SETCOLOR(active_border_color)
     SETCOLOR(normal_border_color)
@@ -783,10 +811,15 @@ bool set_setting(coordinates_t loc, char *name, char *value)
                 for (desktop_t *d = m->desk_head; d != NULL; d = d->next)
                     for (node_t *n = first_extrema(d->root); n != NULL; n = next_leaf(n, d->root))
                         xcb_change_window_attributes(dpy, n->client->window, XCB_CW_EVENT_MASK, values);
-            if (focus_follows_pointer)
+            if (focus_follows_pointer) {
+                for (monitor_t *m = mon_head; m != NULL; m = m->next)
+                    window_hide(m->root);
                 disable_motion_recorder();
-            else
+            } else {
+                for (monitor_t *m = mon_head; m != NULL; m = m->next)
+                    window_show(m->root);
                 enable_motion_recorder();
+            }
             focus_follows_pointer = b;
             return true;
         } else {
@@ -803,6 +836,7 @@ bool set_setting(coordinates_t loc, char *name, char *value)
         SETBOOL(auto_alternate)
         SETBOOL(auto_cancel)
         SETBOOL(history_aware_focus)
+        SETBOOL(honor_ewmh_focus)
 #undef SETBOOL
     } else {
         return false;
@@ -821,6 +855,8 @@ bool get_setting(coordinates_t loc, char *name, char* rsp)
         snprintf(rsp, BUFSIZ, "%u", border_width);
     else if (streq("split_ratio", name))
         snprintf(rsp, BUFSIZ, "%lf", split_ratio);
+    else if (streq("growth_factor", name))
+        snprintf(rsp, BUFSIZ, "%lf", growth_factor);
     else if (streq("window_gap", name))
         if (loc.desktop == NULL)
             return false;
@@ -860,6 +896,7 @@ bool get_setting(coordinates_t loc, char *name, char* rsp)
     GETBOOL(auto_alternate)
     GETBOOL(auto_cancel)
     GETBOOL(history_aware_focus)
+    GETBOOL(honor_ewmh_focus)
 #undef GETBOOL
     else
         return false;

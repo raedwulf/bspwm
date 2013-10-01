@@ -1,8 +1,6 @@
 #ifndef _TREE_H
 #define _TREE_H
 
-#define GROWTH_FACTOR  1.1
-
 node_t *make_node(void);
 client_t *make_client(xcb_window_t);
 void arrange(monitor_t *, desktop_t *);
@@ -11,13 +9,14 @@ void focus_node(monitor_t *, desktop_t *, node_t *);
 void insert_node(monitor_t *, desktop_t *, node_t *, node_t *);
 void unlink_node(desktop_t *, node_t *);
 void remove_node(desktop_t *, node_t *);
-void swap_nodes(node_t *, node_t *);
+void transfer_node(monitor_t *, desktop_t *, node_t *, monitor_t *, desktop_t *, node_t *);
+void swap_nodes(monitor_t *, desktop_t *, node_t *, monitor_t *, desktop_t *, node_t *);
 void pseudo_focus(desktop_t *, node_t *);
 void update_current(void);
 node_t *find_fence(node_t *, direction_t);
 node_t *nearest_neighbor(desktop_t *, node_t *, direction_t, client_select_t);
 node_t *nearest_from_distance(desktop_t *, node_t *, direction_t, client_select_t);
-node_t *nearest_from_history(focus_history_t *, node_t *, direction_t, client_select_t);
+node_t *nearest_from_history(desktop_t *, node_t *, direction_t, client_select_t);
 node_t *find_biggest(desktop_t *, node_t *, client_select_t);
 bool is_leaf(node_t *);
 bool is_tiled(client_t *);
@@ -42,8 +41,6 @@ void unrotate_brother(node_t *);
 void flip_tree(node_t *, flip_t);
 int balance_tree(node_t *);
 void destroy_tree(node_t *);
-void transfer_node(monitor_t *, desktop_t *, monitor_t *, desktop_t *, node_t *);
-void transplant_node(monitor_t *, desktop_t *, node_t *, node_t *);
 node_t *closest_node(desktop_t *, node_t *, cycle_dir_t, client_select_t);
 void circulate_leaves(monitor_t *, desktop_t *, circulate_dir_t);
 void update_vacant_state(node_t *);

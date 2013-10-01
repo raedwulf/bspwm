@@ -18,6 +18,7 @@
 
 #define BORDER_WIDTH   1
 #define SPLIT_RATIO    0.5
+#define GROWTH_FACTOR  1.1
 
 #define HISTORY_AWARE_FOCUS      false
 #define BORDERLESS_MONOCLE       false
@@ -27,6 +28,7 @@
 #define AUTO_ALTERNATE           false
 #define AUTO_CANCEL              false
 #define APPLY_FLOATING_ATOM      false
+#define HONOR_EWMH_FOCUS         false
 
 char focused_border_color[MAXLEN];
 char active_border_color[MAXLEN];
@@ -39,6 +41,7 @@ char urgent_border_color[MAXLEN];
 
 unsigned int border_width;
 double split_ratio;
+double growth_factor;
 
 bool borderless_monocle;
 bool gapless_monocle;
@@ -48,6 +51,7 @@ bool apply_floating_atom;
 bool auto_alternate;
 bool auto_cancel;
 bool history_aware_focus;
+bool honor_ewmh_focus;
 
 void load_settings(void);
 void run_config(void);
